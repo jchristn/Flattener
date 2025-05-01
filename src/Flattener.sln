@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flattener", "Flattener\Flattener.csproj", "{3E9FCB65-2D38-4CB4-A2BA-492FE8A313BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.JsonFlattener", "Test.JsonFlattener\Test.JsonFlattener.csproj", "{0EF5A03F-09D8-4D25-AAC3-B2E39B40D0F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.XmlFlattener", "Test.XmlFlattener\Test.XmlFlattener.csproj", "{207572C7-B44C-47A5-B0C4-864E125B61D1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3E9FCB65-2D38-4CB4-A2BA-492FE8A313BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E9FCB65-2D38-4CB4-A2BA-492FE8A313BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E9FCB65-2D38-4CB4-A2BA-492FE8A313BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E9FCB65-2D38-4CB4-A2BA-492FE8A313BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0EF5A03F-09D8-4D25-AAC3-B2E39B40D0F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0EF5A03F-09D8-4D25-AAC3-B2E39B40D0F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0EF5A03F-09D8-4D25-AAC3-B2E39B40D0F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0EF5A03F-09D8-4D25-AAC3-B2E39B40D0F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{207572C7-B44C-47A5-B0C4-864E125B61D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{207572C7-B44C-47A5-B0C4-864E125B61D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{207572C7-B44C-47A5-B0C4-864E125B61D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{207572C7-B44C-47A5-B0C4-864E125B61D1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

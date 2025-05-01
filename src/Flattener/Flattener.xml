@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Flattener</name>
+    </assembly>
+    <members>
+        <member name="T:Flattener.JsonFlattener">
+            <summary>
+            JSON flattener.
+            </summary>
+        </member>
+        <member name="M:Flattener.JsonFlattener.Flatten(System.String,System.Boolean)">
+            <summary>
+            Flattens a JSON string into a NameValueCollection with dot notation for nested properties.
+            This can handle multiple values per key.
+            </summary>
+            <param name="json">The JSON string to flatten.</param>
+            <param name="includeNullItems">When true, includes null and empty items in the result.</param>
+            <returns>A NameValueCollection containing flattened key-value pairs.</returns>
+        </member>
+        <member name="T:Flattener.XmlFlattener">
+            <summary>
+            XML flattener.
+            </summary>
+        </member>
+        <member name="M:Flattener.XmlFlattener.Flatten(System.String,System.Boolean)">
+            <summary>
+            Flattens an XML string into a NameValueCollection with dot notation for nested elements.
+            This can handle multiple values per key.
+            </summary>
+            <param name="xml">The XML string to flatten.</param>
+            <param name="includeNullItems">When true, includes empty elements and null values in the result.</param>
+            <returns>A NameValueCollection containing flattened key-value pairs.</returns>
+        </member>
+    </members>
+</doc>

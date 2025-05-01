@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net8.0</TargetFrameworks>
+		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile>Flattener.xml</DocumentationFile>
+		<Title>Flattener converts nested JSON or XML into flat key-value collections with dot notation.</Title>
+		<Authors>Joel Christner</Authors>
+		<Description>Flattener converts nested JSON or XML into flat key-value collections with dot notation.</Description>
+		<Copyright>(c)2025 Joel Christner</Copyright>
+		<PackageProjectUrl>https://github.com/jchristn/Flattener</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/jchristn/Flattener</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>flat flatten json xml xpath</PackageTags>
+		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
+		<AssemblyVersion>1.0.0</AssemblyVersion>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Content Include="icon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="..\..\assets\icon.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\..\LICENSE.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="System.Text.Json" Version="9.0.4" />
+	</ItemGroup>
+
+</Project>
