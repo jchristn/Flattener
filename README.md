@@ -1,4 +1,4 @@
-![alt tag](https://raw.githubusercontent.com/jchristn/flattener/main/assets/icon.ico)
+![alt tag](https://raw.githubusercontent.com/jchristn/Flattener/refs/heads/main/assets/icon.ico)
 
 # Flattener
 
