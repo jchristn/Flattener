@@ -6,7 +6,7 @@
 
 ## Description
 
-Flattener converts nested JSON or XML into flat key-value collections with dot notation.
+Flattener converts JSON or XML into flat key-value collections with dot notation.
 
 ## New in v1.0.0
 
@@ -31,7 +31,7 @@ NameValueCollection withNulls = JsonFlattener.Flatten(json, includeNullItems: tr
 
 // Accessing values
 // For a key with a single value:
-string name = flattened.Get("person.name");      // Returns "John"
+string name = flattened.Get("person.name");       // Returns "John"
 // For a key that might have multiple values:
 string[] skills = flattened.GetValues("skills");  // Returns array of values or null
 
@@ -62,6 +62,7 @@ NameValueCollection withEmpties = XmlFlattener.Flatten(xml, includeNullItems: tr
 // XML attributes are prefixed with @
 string id = flattened.Get("User.@id");           // Returns "123"
 string name = flattened.Get("User.n");           // Returns "Alice"
+
 // For repeated elements (array-like):
 string[] skills = flattened.GetValues("User.Skills.Skill");
 
