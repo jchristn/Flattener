@@ -1,125 +1,204 @@
-﻿namespace Test.JsonFlattener
+namespace Test.JsonFlattener
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.Text;
-    using System.Text.Json;
     using Flattener;
 
     class Program
     {
-        static void Main(string[] args)
+        private static int _passed = 0;
+        private static int _failed = 0;
+
+        static int Main(string[] args)
         {
             Console.WriteLine("JSON Flattener Test Program");
             Console.WriteLine("==========================\n");
 
-            // Test 1: Simple JSON object
-            string simpleJson = @"{
-                ""name"": ""John Doe"",
-                ""age"": 30,
-                ""isActive"": true
-            }";
-            TestJsonFlattening("Simple JSON Object (Exclude Null Items)", simpleJson, false);
-            TestJsonFlattening("Simple JSON Object (Include Null Items)", simpleJson, true);
+            SimpleObject_ExcludeNulls_ProducesExpectedPairs();
+            NestedObject_UsesDotNotation();
+            Arrays_UseIndexNotation();
+            IncludeNullItems_EmitsNullEmptyMarkers();
+            ScalarArray_IndexesEachElement();
 
-            // Test 2: Nested JSON object
-            string nestedJson = @"{
+            // Negative cases
+            InvalidJson_ReturnsEmptyCollection();
+            EmptyString_ReturnsEmptyCollection();
+            NullValue_ExcludedByDefault();
+            NonExistentKey_ReturnsNull();
+
+            Console.WriteLine();
+            Console.WriteLine(new string('=', 50));
+            Console.WriteLine($"Results: {_passed} passed, {_failed} failed");
+
+            return _failed == 0 ? 0 : 1;
+        }
+
+        // ---------- Positive test cases ----------
+
+        static void SimpleObject_ExcludeNulls_ProducesExpectedPairs()
+        {
+            string json = @"{ ""name"": ""John Doe"", ""age"": 30, ""isActive"": true }";
+            NameValueCollection result = JsonFlattener.Flatten(json, false);
+
+            AssertEqual("SimpleObject count", 3, result.Count);
+            AssertEqual("SimpleObject name", "John Doe", result["name"]);
+            AssertEqual("SimpleObject age", "30", result["age"]);
+            // JSON booleans are surfaced via bool.ToString(), yielding "True"/"False".
+            AssertEqual("SimpleObject isActive", "True", result["isActive"]);
+        }
+
+        static void NestedObject_UsesDotNotation()
+        {
+            string json = @"{
                 ""person"": {
                     ""name"": ""Jane Smith"",
-                    ""age"": 28,
-                    ""address"": {
-                        ""street"": ""123 Main St"",
-                        ""city"": ""Anytown"",
-                        ""zipCode"": 12345
-                    }
+                    ""address"": { ""street"": ""123 Main St"", ""zipCode"": 12345 }
                 },
                 ""isEmployee"": true
             }";
-            TestJsonFlattening("Nested JSON Object (Exclude Null Items)", nestedJson, false);
-            TestJsonFlattening("Nested JSON Object (Include Null Items)", nestedJson, true);
+            NameValueCollection result = JsonFlattener.Flatten(json, false);
 
-            // Test 3: JSON with arrays
-            string arrayJson = @"{
+            AssertEqual("Nested person.name", "Jane Smith", result["person.name"]);
+            AssertEqual("Nested address.street", "123 Main St", result["person.address.street"]);
+            AssertEqual("Nested address.zipCode", "12345", result["person.address.zipCode"]);
+            AssertEqual("Nested isEmployee", "True", result["isEmployee"]);
+        }
+
+        static void Arrays_UseIndexNotation()
+        {
+            string json = @"{
                 ""employees"": [
-                    {
-                        ""name"": ""Alice"",
-                        ""skills"": [""C#"", ""JavaScript"", ""SQL""]
-                    },
-                    {
-                        ""name"": ""Bob"",
-                        ""skills"": [""Python"", ""Java""]
-                    }
+                    { ""name"": ""Alice"", ""skills"": [""C#"", ""JavaScript"", ""SQL""] },
+                    { ""name"": ""Bob"", ""skills"": [""Python"", ""Java""] }
                 ],
                 ""departmentId"": 42
             }";
-            TestJsonFlattening("JSON with Arrays (Exclude Null Items)", arrayJson, false);
-            TestJsonFlattening("JSON with Arrays (Include Null Items)", arrayJson, true);
+            NameValueCollection result = JsonFlattener.Flatten(json, false);
 
-            // Test 4: Edge cases with null and empty values
-            string edgeCasesJson = @"{
+            AssertEqual("Array employees[0].name", "Alice", result["employees[0].name"]);
+            AssertEqual("Array employees[0].skills[0]", "C#", result["employees[0].skills[0]"]);
+            AssertEqual("Array employees[0].skills[2]", "SQL", result["employees[0].skills[2]"]);
+            AssertEqual("Array employees[1].name", "Bob", result["employees[1].name"]);
+            AssertEqual("Array employees[1].skills[1]", "Java", result["employees[1].skills[1]"]);
+            AssertEqual("Array departmentId", "42", result["departmentId"]);
+        }
+
+        static void IncludeNullItems_EmitsNullEmptyMarkers()
+        {
+            string json = @"{
                 ""emptyObject"": {},
                 ""emptyArray"": [],
                 ""nullValue"": null,
-                ""emptyString"": """",
-                ""mixedArray"": [42, ""text"", true, null, {""nested"": ""value""}]
+                ""emptyString"": """"
             }";
-            TestJsonFlattening("Edge Cases (Exclude Null Items)", edgeCasesJson, false);
-            TestJsonFlattening("Edge Cases (Include Null Items)", edgeCasesJson, true);
+            NameValueCollection result = JsonFlattener.Flatten(json, true);
 
-            // Test 5: Invalid JSON (to test error handling)
-            string invalidJson = @"{""name"": ""Incomplete JSON";
-            TestJsonFlattening("Invalid JSON", invalidJson, false);
-
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+            AssertEqual("IncludeNulls emptyObject", "{}", result["emptyObject"]);
+            AssertEqual("IncludeNulls emptyArray", "[]", result["emptyArray"]);
+            AssertEqual("IncludeNulls emptyString", "", result["emptyString"]);
+            AssertTrue("IncludeNulls nullValue key present", ContainsKey(result, "nullValue"));
         }
 
-        static void TestJsonFlattening(string testName, string json, bool includeNullItems)
+        static void ScalarArray_IndexesEachElement()
         {
-            Console.WriteLine($"Test: {testName}");
-            Console.WriteLine("Input JSON:");
-            Console.WriteLine(FormatJson(json));
-            Console.WriteLine($"IncludeNullItems: {includeNullItems}");
-            Console.WriteLine();
+            string json = @"{ ""tags"": [""a"", ""b""] }";
+            NameValueCollection result = JsonFlattener.Flatten(json, false);
 
-            NameValueCollection flattened = JsonFlattener.Flatten(json, includeNullItems);
-            Console.WriteLine("Flattened Result:");
+            AssertEqual("Scalar array count", 2, result.Count);
+            AssertEqual("Scalar array tags[0]", "a", result["tags[0]"]);
+            AssertEqual("Scalar array tags[1]", "b", result["tags[1]"]);
+        }
 
-            if (flattened.Count == 0)
+        // ---------- Negative test cases ----------
+
+        static void InvalidJson_ReturnsEmptyCollection()
+        {
+            string json = @"{""name"": ""Incomplete JSON";
+            NameValueCollection result = JsonFlattener.Flatten(json, false);
+            AssertEqual("Invalid JSON count", 0, result.Count);
+        }
+
+        static void EmptyString_ReturnsEmptyCollection()
+        {
+            NameValueCollection result = JsonFlattener.Flatten("", false);
+            AssertEqual("Empty string count", 0, result.Count);
+        }
+
+        static void NullValue_ExcludedByDefault()
+        {
+            string json = @"{ ""present"": ""yes"", ""missing"": null }";
+            NameValueCollection result = JsonFlattener.Flatten(json, false);
+
+            AssertEqual("NullExcluded count", 1, result.Count);
+            AssertTrue("NullExcluded missing absent", !ContainsKey(result, "missing"));
+            AssertEqual("NullExcluded present", "yes", result["present"]);
+        }
+
+        static void NonExistentKey_ReturnsNull()
+        {
+            string json = @"{ ""a"": 1 }";
+            NameValueCollection result = JsonFlattener.Flatten(json, false);
+            AssertTrue("NonExistent key returns null", result["does.not.exist"] == null);
+        }
+
+        // ---------- Assertion helpers ----------
+
+        static bool ContainsKey(NameValueCollection collection, string key)
+        {
+            foreach (string k in collection.AllKeys)
             {
-                Console.WriteLine("  (Empty result - possibly due to invalid JSON)");
+                if (k == key) return true;
+            }
+            return false;
+        }
+
+        static void AssertEqual(string name, string expected, string actual)
+        {
+            if (expected == actual)
+            {
+                Pass(name);
             }
             else
             {
-                foreach (string key in flattened.AllKeys)
-                {
-                    string[] values = flattened.GetValues(key);
-                    if (values != null)
-                    {
-                        foreach (string value in values)
-                        {
-                            Console.WriteLine($"  {key} = {(value ?? "null")}");
-                        }
-                    }
-                }
+                Fail(name, $"expected \"{expected}\" but got \"{actual ?? "null"}\"");
             }
-
-            Console.WriteLine("\n" + new string('-', 50) + "\n");
         }
 
-        static string FormatJson(string json)
+        static void AssertEqual(string name, int expected, int actual)
         {
-            try
+            if (expected == actual)
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
-                return JsonSerializer.Serialize(jsonElement, options);
+                Pass(name);
             }
-            catch
+            else
             {
-                // If formatting fails, return the original JSON
-                return json;
+                Fail(name, $"expected {expected} but got {actual}");
             }
+        }
+
+        static void AssertTrue(string name, bool condition)
+        {
+            if (condition)
+            {
+                Pass(name);
+            }
+            else
+            {
+                Fail(name, "condition was false");
+            }
+        }
+
+        static void Pass(string name)
+        {
+            _passed++;
+            Console.WriteLine($"  [PASS] {name}");
+        }
+
+        static void Fail(string name, string detail)
+        {
+            _failed++;
+            Console.WriteLine($"  [FAIL] {name}: {detail}");
         }
     }
 }

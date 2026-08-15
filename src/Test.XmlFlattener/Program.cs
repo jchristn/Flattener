@@ -1,57 +1,101 @@
-﻿namespace Test.XmlFlattener
+namespace Test.XmlFlattener
 {
     using System;
     using System.Collections.Specialized;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Linq;
     using Flattener;
 
     class Program
     {
-        static void Main(string[] args)
+        private static int _passed = 0;
+        private static int _failed = 0;
+
+        static int Main(string[] args)
         {
             Console.WriteLine("XML Flattener Test Program");
             Console.WriteLine("==========================\n");
 
-            // Test 1: Simple XML
-            string simpleXml = @"
+            // Positive cases
+            SimpleXml_ProducesExpectedPairs();
+            Attributes_UseAtNotation();
+            NestedXml_UsesDotNotation();
+            RepeatedElements_UseIndexNotation();
+            IncludeNullItems_EmitsEmptyElements();
+
+            // Negative cases
+            InvalidXml_ReturnsEmptyCollection();
+            EmptyString_ReturnsEmptyCollection();
+            EmptyElements_ExcludedByDefault();
+            NonExistentKey_ReturnsNull();
+
+            Console.WriteLine();
+            Console.WriteLine(new string('=', 50));
+            Console.WriteLine($"Results: {_passed} passed, {_failed} failed");
+
+            return _failed == 0 ? 0 : 1;
+        }
+
+        // ---------- Positive test cases ----------
+
+        static void SimpleXml_ProducesExpectedPairs()
+        {
+            string xml = @"
                 <Person>
                     <Name>John Doe</Name>
                     <Age>30</Age>
                     <Active>true</Active>
                 </Person>";
-            TestXmlFlattening("Simple XML (Exclude Null Items)", simpleXml, false);
-            TestXmlFlattening("Simple XML (Include Null Items)", simpleXml, true);
+            NameValueCollection result = XmlFlattener.Flatten(xml, false);
 
-            // Test 2: XML with attributes
-            string xmlWithAttributes = @"
+            AssertEqual("SimpleXml count", 3, result.Count);
+            AssertEqual("SimpleXml Name", "John Doe", result["Name"]);
+            AssertEqual("SimpleXml Age", "30", result["Age"]);
+            AssertEqual("SimpleXml Active", "true", result["Active"]);
+        }
+
+        static void Attributes_UseAtNotation()
+        {
+            string xml = @"
                 <Employee id=""12345"" department=""IT"">
                     <Name>Jane Smith</Name>
                     <Position title=""Senior Developer"">Developer</Position>
                     <Salary currency=""USD"">85000</Salary>
                 </Employee>";
-            TestXmlFlattening("XML with Attributes (Exclude Null Items)", xmlWithAttributes, false);
-            TestXmlFlattening("XML with Attributes (Include Null Items)", xmlWithAttributes, true);
+            NameValueCollection result = XmlFlattener.Flatten(xml, false);
 
-            // Test 3: Nested XML
-            string nestedXml = @"
+            AssertEqual("Attr Employee.@id", "12345", result["Employee.@id"]);
+            AssertEqual("Attr Employee.@department", "IT", result["Employee.@department"]);
+            AssertEqual("Attr Name", "Jane Smith", result["Name"]);
+            AssertEqual("Attr Position.@title", "Senior Developer", result["Position.@title"]);
+            AssertEqual("Attr Position value", "Developer", result["Position"]);
+            AssertEqual("Attr Salary.@currency", "USD", result["Salary.@currency"]);
+            AssertEqual("Attr Salary value", "85000", result["Salary"]);
+        }
+
+        static void NestedXml_UsesDotNotation()
+        {
+            string xml = @"
                 <Company name=""Tech Solutions"">
                     <HeadOffice>
                         <Address>
                             <Street>123 Main St</Street>
                             <City>Anytown</City>
-                            <ZipCode>12345</ZipCode>
                         </Address>
                         <Phone>555-123-4567</Phone>
                     </HeadOffice>
                     <Founded>2005</Founded>
                 </Company>";
-            TestXmlFlattening("Nested XML (Exclude Null Items)", nestedXml, false);
-            TestXmlFlattening("Nested XML (Include Null Items)", nestedXml, true);
+            NameValueCollection result = XmlFlattener.Flatten(xml, false);
 
-            // Test 4: Array-like XML (repeated elements)
-            string arrayXml = @"
+            AssertEqual("Nested Company.@name", "Tech Solutions", result["Company.@name"]);
+            AssertEqual("Nested Street", "123 Main St", result["HeadOffice.Address.Street"]);
+            AssertEqual("Nested City", "Anytown", result["HeadOffice.Address.City"]);
+            AssertEqual("Nested Phone", "555-123-4567", result["HeadOffice.Phone"]);
+            AssertEqual("Nested Founded", "2005", result["Founded"]);
+        }
+
+        static void RepeatedElements_UseIndexNotation()
+        {
+            string xml = @"
                 <Department>
                     <Name>Engineering</Name>
                     <Employee>
@@ -66,78 +110,123 @@
                         <Skill>Java</Skill>
                     </Employee>
                 </Department>";
-            TestXmlFlattening("Array-like XML (Exclude Null Items)", arrayXml, false);
-            TestXmlFlattening("Array-like XML (Include Null Items)", arrayXml, true);
+            NameValueCollection result = XmlFlattener.Flatten(xml, false);
 
-            // Test 5: XML with empty and null values
-            string emptyValuesXml = @"
-                <TestCase>
-                    <EmptyElement></EmptyElement>
-                    <NullAttribute attr=""""/>
-                    <EmptyArray>
-                    </EmptyArray>
-                    <MixedContent>
-                        <ValidItem>Content</ValidItem>
-                        <EmptyItem></EmptyItem>
-                        <SelfClosing />
-                    </MixedContent>
-                </TestCase>";
-            TestXmlFlattening("XML with Empty Values (Exclude Null Items)", emptyValuesXml, false);
-            TestXmlFlattening("XML with Empty Values (Include Null Items)", emptyValuesXml, true);
-
-            // Test 6: Invalid XML (to test error handling)
-            string invalidXml = @"<InvalidXml><Unclosed>";
-            TestXmlFlattening("Invalid XML", invalidXml, false);
-
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+            AssertEqual("Repeated Name", "Engineering", result["Name"]);
+            AssertEqual("Repeated Employee[0].Name", "Alice", result["Employee[0].Name"]);
+            AssertEqual("Repeated Employee[0].Skill[0]", "C#", result["Employee[0].Skill[0]"]);
+            AssertEqual("Repeated Employee[0].Skill[2]", "SQL", result["Employee[0].Skill[2]"]);
+            AssertEqual("Repeated Employee[1].Name", "Bob", result["Employee[1].Name"]);
+            AssertEqual("Repeated Employee[1].Skill[1]", "Java", result["Employee[1].Skill[1]"]);
         }
 
-        static void TestXmlFlattening(string testName, string xml, bool includeNullItems)
+        static void IncludeNullItems_EmitsEmptyElements()
         {
-            Console.WriteLine($"Test: {testName}");
-            Console.WriteLine("Input XML:");
-            Console.WriteLine(FormatXml(xml));
-            Console.WriteLine($"IncludeNullItems: {includeNullItems}");
-            Console.WriteLine();
+            string xml = @"
+                <TestCase>
+                    <EmptyElement></EmptyElement>
+                    <ValidItem>Content</ValidItem>
+                </TestCase>";
+            NameValueCollection result = XmlFlattener.Flatten(xml, true);
 
-            NameValueCollection flattened = XmlFlattener.Flatten(xml, includeNullItems);
-            Console.WriteLine("Flattened Result:");
+            AssertEqual("IncludeNulls ValidItem", "Content", result["ValidItem"]);
+            AssertTrue("IncludeNulls EmptyElement present", ContainsKey(result, "EmptyElement"));
+            AssertEqual("IncludeNulls EmptyElement value", "", result["EmptyElement"]);
+        }
 
-            if (flattened.Count == 0)
+        // ---------- Negative test cases ----------
+
+        static void InvalidXml_ReturnsEmptyCollection()
+        {
+            string xml = @"<InvalidXml><Unclosed>";
+            NameValueCollection result = XmlFlattener.Flatten(xml, false);
+            AssertEqual("Invalid XML count", 0, result.Count);
+        }
+
+        static void EmptyString_ReturnsEmptyCollection()
+        {
+            NameValueCollection result = XmlFlattener.Flatten("", false);
+            AssertEqual("Empty string count", 0, result.Count);
+        }
+
+        static void EmptyElements_ExcludedByDefault()
+        {
+            string xml = @"
+                <TestCase>
+                    <EmptyElement></EmptyElement>
+                    <ValidItem>Content</ValidItem>
+                </TestCase>";
+            NameValueCollection result = XmlFlattener.Flatten(xml, false);
+
+            AssertEqual("EmptyExcluded count", 1, result.Count);
+            AssertTrue("EmptyExcluded EmptyElement absent", !ContainsKey(result, "EmptyElement"));
+            AssertEqual("EmptyExcluded ValidItem", "Content", result["ValidItem"]);
+        }
+
+        static void NonExistentKey_ReturnsNull()
+        {
+            string xml = @"<Root><A>1</A></Root>";
+            NameValueCollection result = XmlFlattener.Flatten(xml, false);
+            AssertTrue("NonExistent key returns null", result["Does.Not.Exist"] == null);
+        }
+
+        // ---------- Assertion helpers ----------
+
+        static bool ContainsKey(NameValueCollection collection, string key)
+        {
+            foreach (string k in collection.AllKeys)
             {
-                Console.WriteLine("  (Empty result - possibly due to invalid XML)");
+                if (k == key) return true;
+            }
+            return false;
+        }
+
+        static void AssertEqual(string name, string expected, string actual)
+        {
+            if (expected == actual)
+            {
+                Pass(name);
             }
             else
             {
-                foreach (string key in flattened.AllKeys)
-                {
-                    string[] values = flattened.GetValues(key);
-                    if (values != null)
-                    {
-                        foreach (string value in values)
-                        {
-                            Console.WriteLine($"  {key} = {(value ?? "null")}");
-                        }
-                    }
-                }
+                Fail(name, $"expected \"{expected}\" but got \"{actual ?? "null"}\"");
             }
-
-            Console.WriteLine("\n" + new string('-', 50) + "\n");
         }
 
-        static string FormatXml(string xml)
+        static void AssertEqual(string name, int expected, int actual)
         {
-            try
+            if (expected == actual)
             {
-                XDocument doc = XDocument.Parse(xml);
-                return doc.ToString();
+                Pass(name);
             }
-            catch
+            else
             {
-                // If formatting fails, return the original XML
-                return xml;
+                Fail(name, $"expected {expected} but got {actual}");
             }
+        }
+
+        static void AssertTrue(string name, bool condition)
+        {
+            if (condition)
+            {
+                Pass(name);
+            }
+            else
+            {
+                Fail(name, "condition was false");
+            }
+        }
+
+        static void Pass(string name)
+        {
+            _passed++;
+            Console.WriteLine($"  [PASS] {name}");
+        }
+
+        static void Fail(string name, string detail)
+        {
+            _failed++;
+            Console.WriteLine($"  [FAIL] {name}: {detail}");
         }
     }
 }
