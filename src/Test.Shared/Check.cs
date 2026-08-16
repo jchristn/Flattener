@@ -118,6 +118,38 @@ namespace Test.Shared
         }
 
         /// <summary>
+        /// Assert the number of distinct values stored under a single key.
+        /// A <see cref="NameValueCollection"/> can hold several values per key; this pins that behavior.
+        /// </summary>
+        internal static void ValueCount(NameValueCollection collection, string key, int expected, string context)
+        {
+            HasKey(collection, key, context);
+            string[] values = collection.GetValues(key);
+            int actual = values == null ? 0 : values.Length;
+            if (actual != expected)
+            {
+                throw new TestAssertionException(
+                    $"{context} [{key}]: expected {expected} value(s) but got {actual} " +
+                    $"(values: {(values == null ? "(null)" : string.Join(" | ", values.Select(v => v ?? "(null)")))}).");
+            }
+        }
+
+        /// <summary>
+        /// Assert that one of the values stored under a key equals an expected string.
+        /// </summary>
+        internal static void HasValue(NameValueCollection collection, string key, string expected, string context)
+        {
+            HasKey(collection, key, context);
+            string[] values = collection.GetValues(key);
+            if (values == null || !values.Any(v => string.Equals(v, expected, StringComparison.Ordinal)))
+            {
+                throw new TestAssertionException(
+                    $"{context} [{key}]: expected a value of \"{Show(expected)}\" " +
+                    $"(values: {(values == null ? "(null)" : string.Join(" | ", values.Select(v => v ?? "(null)")))}).");
+            }
+        }
+
+        /// <summary>
         /// Determine whether a key exists in the collection (null-safe, ordinal).
         /// </summary>
         internal static bool ContainsKey(NameValueCollection collection, string key)

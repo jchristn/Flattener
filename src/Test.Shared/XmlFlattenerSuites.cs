@@ -103,6 +103,13 @@ namespace Test.Shared
                 Check.ValueEqual(r, "v", "a & b < c", "EntityDecoding");
             }));
 
+            cases.Add(Case(suite, "NumericValuesRemainStrings", "XML values are untyped text, so leading zeros survive", () =>
+            {
+                NameValueCollection r = XmlFlattener.Flatten(@"<r><Zip>01234</Zip><Flag>true</Flag></r>");
+                Check.ValueEqual(r, "Zip", "01234", "NumericValuesRemainStrings");
+                Check.ValueEqual(r, "Flag", "true", "NumericValuesRemainStrings");
+            }));
+
             return Build(suite, "XML Flattener - Positive", cases);
         }
 
@@ -247,6 +254,18 @@ namespace Test.Shared
             {
                 NameValueCollection r = XmlFlattener.Flatten(@"<a>content</b>");
                 Check.Count(0, r, "MismatchedTags");
+            }));
+
+            cases.Add(Case(suite, "UnescapedAmpersand", "A bare ampersand is malformed and yields empty collection", () =>
+            {
+                NameValueCollection r = XmlFlattener.Flatten(@"<r><a>x & y</a></r>");
+                Check.Count(0, r, "UnescapedAmpersand");
+            }));
+
+            cases.Add(Case(suite, "InvalidAttributeSyntax", "An attribute without a value is malformed and yields empty collection", () =>
+            {
+                NameValueCollection r = XmlFlattener.Flatten(@"<r attr></r>");
+                Check.Count(0, r, "InvalidAttributeSyntax");
             }));
 
             cases.Add(Case(suite, "MultipleRoots", "Multiple root elements yield empty collection", () =>

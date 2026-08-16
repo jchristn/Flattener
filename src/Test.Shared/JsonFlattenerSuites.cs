@@ -158,6 +158,36 @@ namespace Test.Shared
                 Check.ValueEqual(r, "present", "x", "EmptyStringRetained");
             }));
 
+            cases.Add(Case(suite, "DuplicateKeys", "Duplicate property names accumulate as multiple values under one key", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ ""a"": 1, ""a"": 2 }");
+                Check.Count(1, r, "DuplicateKeys");
+                Check.ValueCount(r, "a", 2, "DuplicateKeys");
+                Check.HasValue(r, "a", "1", "DuplicateKeys");
+                Check.HasValue(r, "a", "2", "DuplicateKeys");
+                // Indexer joins multiple values with commas.
+                Check.ValueEqual(r, "a", "1,2", "DuplicateKeys");
+            }));
+
+            cases.Add(Case(suite, "WholeNumberDouble", "A number with a fractional zero collapses to its integer text", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ ""n"": 2.0 }");
+                Check.ValueEqual(r, "n", "2", "WholeNumberDouble");
+            }));
+
+            cases.Add(Case(suite, "ScientificNotation", "Exponential numbers surface as their expanded double text", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ ""n"": 1.5e3 }");
+                Check.ValueEqual(r, "n", "1500", "ScientificNotation");
+            }));
+
+            cases.Add(Case(suite, "ControlCharEscapes", "Escaped control characters are decoded to their literal characters", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ ""nl"": ""a\nb"", ""tab"": ""x\ty"" }");
+                Check.ValueEqual(r, "nl", "a\nb", "ControlCharEscapes");
+                Check.ValueEqual(r, "tab", "x\ty", "ControlCharEscapes");
+            }));
+
             return Build(suite, "JSON Flattener - Positive", cases);
         }
 
@@ -202,6 +232,16 @@ namespace Test.Shared
                 NameValueCollection r = JsonFlattener.Flatten(@"{ ""outer"": { ""inner"": {} } }", true);
                 Check.Count(1, r, "NestedEmptyObjectMarker");
                 Check.ValueEqual(r, "outer.inner", "{}", "NestedEmptyObjectMarker");
+            }));
+
+            cases.Add(Case(suite, "NullArrayElementIncluded", "Null array elements keep their indexed key when enabled", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ ""a"": [1, null, 3] }", true);
+                Check.Count(3, r, "NullArrayElementIncluded");
+                Check.ValueEqual(r, "a[0]", "1", "NullArrayElementIncluded");
+                Check.HasKey(r, "a[1]", "NullArrayElementIncluded");
+                Check.Null(r["a[1]"], "NullArrayElementIncluded a[1]");
+                Check.ValueEqual(r, "a[2]", "3", "NullArrayElementIncluded");
             }));
 
             return Build(suite, "JSON Flattener - Include Nulls", cases);
@@ -250,6 +290,18 @@ namespace Test.Shared
             {
                 NameValueCollection r = JsonFlattener.Flatten(@"{ ""a"": 1 /* comment */ }");
                 Check.Count(0, r, "CommentsRejected");
+            }));
+
+            cases.Add(Case(suite, "UnquotedKey", "Unquoted property names are rejected", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ a: 1 }");
+                Check.Count(0, r, "UnquotedKey");
+            }));
+
+            cases.Add(Case(suite, "SingleQuotedString", "Single-quoted strings are rejected", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ ""a"": 'x' }");
+                Check.Count(0, r, "SingleQuotedString");
             }));
 
             cases.Add(Case(suite, "NullExcludedByDefault", "Null values excluded when disabled", () =>
