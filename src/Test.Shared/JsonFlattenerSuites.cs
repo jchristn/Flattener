@@ -25,6 +25,7 @@ namespace Test.Shared
                     Positive(),
                     IncludeNulls(),
                     Negative(),
+                    ErrorReporting(),
                     EdgeCases()
                 };
             }
@@ -395,6 +396,92 @@ namespace Test.Shared
             }));
 
             return Build(suite, "JSON Flattener - Edge Cases", cases);
+        }
+
+        // ---------------------------------------------------------------------
+        // Error reporting (TryFlatten / throwOnError)
+        // ---------------------------------------------------------------------
+
+        private static TestSuiteDescriptor ErrorReporting()
+        {
+            const string suite = "Json.ErrorReporting";
+            List<TestCaseDescriptor> cases = new List<TestCaseDescriptor>();
+
+            cases.Add(Case(suite, "TryFlattenValid", "TryFlatten returns true and no error for valid input", () =>
+            {
+                bool ok = JsonFlattener.TryFlatten(@"{ ""person"": { ""name"": ""John"" } }", out NameValueCollection r, out System.Exception error);
+                Check.True(ok, "TryFlattenValid ok");
+                Check.Null(error, "TryFlattenValid error");
+                Check.ValueEqual(r, "person.name", "John", "TryFlattenValid");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenValidEmptyDocument", "TryFlatten returns true for a valid document with no values", () =>
+            {
+                bool ok = JsonFlattener.TryFlatten("{}", out NameValueCollection r, out System.Exception error);
+                Check.True(ok, "TryFlattenValidEmptyDocument ok");
+                Check.Null(error, "TryFlattenValidEmptyDocument error");
+                Check.Count(0, r, "TryFlattenValidEmptyDocument");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenMalformed", "TryFlatten returns false with a parse exception for malformed input", () =>
+            {
+                bool ok = JsonFlattener.TryFlatten(@"{ ""name"": ""Incomplete JSON", out NameValueCollection r, out System.Exception error);
+                Check.False(ok, "TryFlattenMalformed ok");
+                Check.True(error is System.Text.Json.JsonException, "TryFlattenMalformed error type");
+                Check.True(r != null, "TryFlattenMalformed result not null");
+                Check.Count(0, r, "TryFlattenMalformed");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenEmptyString", "TryFlatten returns false for empty input", () =>
+            {
+                bool ok = JsonFlattener.TryFlatten("", out NameValueCollection r, out System.Exception error);
+                Check.False(ok, "TryFlattenEmptyString ok");
+                Check.True(error is System.Text.Json.JsonException, "TryFlattenEmptyString error type");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenWhitespace", "TryFlatten returns false for whitespace-only input", () =>
+            {
+                bool ok = JsonFlattener.TryFlatten("   ", out NameValueCollection r, out System.Exception error);
+                Check.False(ok, "TryFlattenWhitespace ok");
+                Check.True(error is System.Text.Json.JsonException, "TryFlattenWhitespace error type");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenNull", "TryFlatten returns false with ArgumentNullException for null input", () =>
+            {
+                bool ok = JsonFlattener.TryFlatten(null, out NameValueCollection r, out System.Exception error);
+                Check.False(ok, "TryFlattenNull ok");
+                Check.True(error is System.ArgumentNullException, "TryFlattenNull error type");
+                Check.Count(0, r, "TryFlattenNull");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenIncludeNullItems", "TryFlatten honors includeNullItems", () =>
+            {
+                bool ok = JsonFlattener.TryFlatten("{}", out NameValueCollection r, out System.Exception error, includeNullItems: true);
+                Check.True(ok, "TryFlattenIncludeNullItems ok");
+                Check.Count(1, r, "TryFlattenIncludeNullItems");
+            }));
+
+            cases.Add(Case(suite, "ThrowOnErrorMalformed", "throwOnError true surfaces the parse exception", () =>
+            {
+                System.Exception caught = null;
+                try { JsonFlattener.Flatten(@"{ ""name"": ""Incomplete JSON", false, true); }
+                catch (System.Exception e) { caught = e; }
+                Check.True(caught is System.Text.Json.JsonException, "ThrowOnErrorMalformed error type");
+            }));
+
+            cases.Add(Case(suite, "ThrowOnErrorValid", "throwOnError true returns the result for valid input", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ ""person"": { ""name"": ""John"" } }", false, true);
+                Check.ValueEqual(r, "person.name", "John", "ThrowOnErrorValid");
+            }));
+
+            cases.Add(Case(suite, "ThrowOnErrorFalseMalformed", "throwOnError false keeps the empty-collection behavior", () =>
+            {
+                NameValueCollection r = JsonFlattener.Flatten(@"{ ""name"": ""Incomplete JSON", false, false);
+                Check.Count(0, r, "ThrowOnErrorFalseMalformed");
+            }));
+
+            return Build(suite, "JSON Flattener - Error Reporting", cases);
         }
 
         // ---------------------------------------------------------------------

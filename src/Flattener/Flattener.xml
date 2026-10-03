@@ -13,10 +13,37 @@
             <summary>
             Flattens a JSON string into a NameValueCollection with dot notation for nested properties.
             This can handle multiple values per key.
+            Malformed JSON returns an empty collection, which is indistinguishable from a valid document with no values;
+            use <see cref="M:Flattener.JsonFlattener.TryFlatten(System.String,System.Collections.Specialized.NameValueCollection@,System.Exception@,System.Boolean)"/> or
+            <see cref="M:Flattener.JsonFlattener.Flatten(System.String,System.Boolean,System.Boolean)"/> when the caller needs to detect malformed input.
             </summary>
             <param name="json">The JSON string to flatten.</param>
             <param name="includeNullItems">When true, includes null and empty items in the result.</param>
             <returns>A NameValueCollection containing flattened key-value pairs.</returns>
+        </member>
+        <member name="M:Flattener.JsonFlattener.Flatten(System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Flattens a JSON string into a NameValueCollection with dot notation for nested properties,
+            optionally throwing when the input is malformed.
+            </summary>
+            <param name="json">The JSON string to flatten.</param>
+            <param name="includeNullItems">When true, includes null and empty items in the result.</param>
+            <param name="throwOnError">When true, malformed JSON throws <see cref="T:System.Text.Json.JsonException"/>; when false, an empty collection is returned.</param>
+            <returns>A NameValueCollection containing flattened key-value pairs.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+            <exception cref="T:System.Text.Json.JsonException">Thrown when <paramref name="json"/> is malformed and <paramref name="throwOnError"/> is true.</exception>
+        </member>
+        <member name="M:Flattener.JsonFlattener.TryFlatten(System.String,System.Collections.Specialized.NameValueCollection@,System.Exception@,System.Boolean)">
+            <summary>
+            Attempts to flatten a JSON string into a NameValueCollection with dot notation for nested properties.
+            Does not throw for null or malformed input; distinguishes malformed input from a valid document with no values.
+            </summary>
+            <param name="json">The JSON string to flatten.</param>
+            <param name="result">The flattened key-value pairs on success; an empty collection on failure.</param>
+            <param name="error">Null on success; on failure, the exception describing why the input could not be flattened
+            (<see cref="T:System.Text.Json.JsonException"/> for malformed input, <see cref="T:System.ArgumentNullException"/> for null input).</param>
+            <param name="includeNullItems">When true, includes null and empty items in the result.</param>
+            <returns>True if the input was parsed and flattened; false if it was null or malformed.</returns>
         </member>
         <member name="T:Flattener.XmlFlattener">
             <summary>
@@ -27,10 +54,37 @@
             <summary>
             Flattens an XML string into a NameValueCollection with dot notation for nested elements.
             This can handle multiple values per key.
+            Malformed XML returns an empty collection, which is indistinguishable from a valid document with no values;
+            use <see cref="M:Flattener.XmlFlattener.TryFlatten(System.String,System.Collections.Specialized.NameValueCollection@,System.Exception@,System.Boolean)"/> or
+            <see cref="M:Flattener.XmlFlattener.Flatten(System.String,System.Boolean,System.Boolean)"/> when the caller needs to detect malformed input.
             </summary>
             <param name="xml">The XML string to flatten.</param>
             <param name="includeNullItems">When true, includes empty elements and null values in the result.</param>
             <returns>A NameValueCollection containing flattened key-value pairs.</returns>
+        </member>
+        <member name="M:Flattener.XmlFlattener.Flatten(System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Flattens an XML string into a NameValueCollection with dot notation for nested elements,
+            optionally throwing when the input is malformed.
+            </summary>
+            <param name="xml">The XML string to flatten.</param>
+            <param name="includeNullItems">When true, includes empty elements and null values in the result.</param>
+            <param name="throwOnError">When true, malformed XML throws <see cref="T:System.Xml.XmlException"/>; when false, an empty collection is returned.</param>
+            <returns>A NameValueCollection containing flattened key-value pairs.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="xml"/> is null.</exception>
+            <exception cref="T:System.Xml.XmlException">Thrown when <paramref name="xml"/> is malformed and <paramref name="throwOnError"/> is true.</exception>
+        </member>
+        <member name="M:Flattener.XmlFlattener.TryFlatten(System.String,System.Collections.Specialized.NameValueCollection@,System.Exception@,System.Boolean)">
+            <summary>
+            Attempts to flatten an XML string into a NameValueCollection with dot notation for nested elements.
+            Does not throw for null or malformed input; distinguishes malformed input from a valid document with no values.
+            </summary>
+            <param name="xml">The XML string to flatten.</param>
+            <param name="result">The flattened key-value pairs on success; an empty collection on failure.</param>
+            <param name="error">Null on success; on failure, the exception describing why the input could not be flattened
+            (<see cref="T:System.Xml.XmlException"/> for malformed input, <see cref="T:System.ArgumentNullException"/> for null input).</param>
+            <param name="includeNullItems">When true, includes empty elements and null values in the result.</param>
+            <returns>True if the input was parsed and flattened; false if it was null or malformed.</returns>
         </member>
     </members>
 </doc>

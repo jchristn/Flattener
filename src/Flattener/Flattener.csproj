@@ -16,8 +16,10 @@
 		<RepositoryUrl>https://github.com/jchristn/Flattener</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>flat flatten json xml xpath</PackageTags>
-		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
-		<AssemblyVersion>1.0.0</AssemblyVersion>
+		<PackageReleaseNotes>Added TryFlatten and a throwOnError overload so callers can detect malformed input</PackageReleaseNotes>
+		<Version>1.1.0</Version>
+		<AssemblyVersion>1.1.0</AssemblyVersion>
+		<FileVersion>1.1.0</FileVersion>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>

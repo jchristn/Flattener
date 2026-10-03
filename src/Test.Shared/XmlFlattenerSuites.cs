@@ -26,6 +26,7 @@ namespace Test.Shared
                     Attributes(),
                     IncludeNulls(),
                     Negative(),
+                    ErrorReporting(),
                     EdgeCases()
                 };
             }
@@ -342,6 +343,92 @@ namespace Test.Shared
             }));
 
             return Build(suite, "XML Flattener - Edge Cases", cases);
+        }
+
+        // ---------------------------------------------------------------------
+        // Error reporting (TryFlatten / throwOnError)
+        // ---------------------------------------------------------------------
+
+        private static TestSuiteDescriptor ErrorReporting()
+        {
+            const string suite = "Xml.ErrorReporting";
+            List<TestCaseDescriptor> cases = new List<TestCaseDescriptor>();
+
+            cases.Add(Case(suite, "TryFlattenValid", "TryFlatten returns true and no error for valid input", () =>
+            {
+                bool ok = XmlFlattener.TryFlatten(@"<User id=""1""><n>Alice</n></User>", out NameValueCollection r, out System.Exception error);
+                Check.True(ok, "TryFlattenValid ok");
+                Check.Null(error, "TryFlattenValid error");
+                Check.ValueEqual(r, "n", "Alice", "TryFlattenValid");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenValidEmptyDocument", "TryFlatten returns true for a valid document with no values", () =>
+            {
+                bool ok = XmlFlattener.TryFlatten("<Root/>", out NameValueCollection r, out System.Exception error);
+                Check.True(ok, "TryFlattenValidEmptyDocument ok");
+                Check.Null(error, "TryFlattenValidEmptyDocument error");
+                Check.Count(0, r, "TryFlattenValidEmptyDocument");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenMalformed", "TryFlatten returns false with a parse exception for malformed input", () =>
+            {
+                bool ok = XmlFlattener.TryFlatten(@"<InvalidXml><Unclosed>", out NameValueCollection r, out System.Exception error);
+                Check.False(ok, "TryFlattenMalformed ok");
+                Check.True(error is System.Xml.XmlException, "TryFlattenMalformed error type");
+                Check.True(r != null, "TryFlattenMalformed result not null");
+                Check.Count(0, r, "TryFlattenMalformed");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenEmptyString", "TryFlatten returns false for empty input", () =>
+            {
+                bool ok = XmlFlattener.TryFlatten("", out NameValueCollection r, out System.Exception error);
+                Check.False(ok, "TryFlattenEmptyString ok");
+                Check.True(error is System.Xml.XmlException, "TryFlattenEmptyString error type");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenWhitespace", "TryFlatten returns false for whitespace-only input", () =>
+            {
+                bool ok = XmlFlattener.TryFlatten("   ", out NameValueCollection r, out System.Exception error);
+                Check.False(ok, "TryFlattenWhitespace ok");
+                Check.True(error is System.Xml.XmlException, "TryFlattenWhitespace error type");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenNull", "TryFlatten returns false with ArgumentNullException for null input", () =>
+            {
+                bool ok = XmlFlattener.TryFlatten(null, out NameValueCollection r, out System.Exception error);
+                Check.False(ok, "TryFlattenNull ok");
+                Check.True(error is System.ArgumentNullException, "TryFlattenNull error type");
+                Check.Count(0, r, "TryFlattenNull");
+            }));
+
+            cases.Add(Case(suite, "TryFlattenIncludeNullItems", "TryFlatten honors includeNullItems", () =>
+            {
+                bool ok = XmlFlattener.TryFlatten("<Root/>", out NameValueCollection r, out System.Exception error, includeNullItems: true);
+                Check.True(ok, "TryFlattenIncludeNullItems ok");
+                Check.Count(1, r, "TryFlattenIncludeNullItems");
+            }));
+
+            cases.Add(Case(suite, "ThrowOnErrorMalformed", "throwOnError true surfaces the parse exception", () =>
+            {
+                System.Exception caught = null;
+                try { XmlFlattener.Flatten(@"<InvalidXml><Unclosed>", false, true); }
+                catch (System.Exception e) { caught = e; }
+                Check.True(caught is System.Xml.XmlException, "ThrowOnErrorMalformed error type");
+            }));
+
+            cases.Add(Case(suite, "ThrowOnErrorValid", "throwOnError true returns the result for valid input", () =>
+            {
+                NameValueCollection r = XmlFlattener.Flatten(@"<User id=""1""><n>Alice</n></User>", false, true);
+                Check.ValueEqual(r, "n", "Alice", "ThrowOnErrorValid");
+            }));
+
+            cases.Add(Case(suite, "ThrowOnErrorFalseMalformed", "throwOnError false keeps the empty-collection behavior", () =>
+            {
+                NameValueCollection r = XmlFlattener.Flatten(@"<InvalidXml><Unclosed>", false, false);
+                Check.Count(0, r, "ThrowOnErrorFalseMalformed");
+            }));
+
+            return Build(suite, "XML Flattener - Error Reporting", cases);
         }
 
         // ---------------------------------------------------------------------

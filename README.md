@@ -8,11 +8,11 @@
 
 Flattener converts JSON or XML into flat key-value collections with dot notation.
 
-## New in v1.0.0
+## New in v1.1.0
 
-- Initial release
-- JSON and XML flattening support
-- Optional inclusion of null values
+- `TryFlatten(input, out result, out error, includeNullItems)` on `JsonFlattener` and `XmlFlattener` reports malformed or null input instead of silently returning an empty collection
+- `Flatten(input, includeNullItems, throwOnError)` overload surfaces the underlying `JsonException` / `XmlException`
+- Existing `Flatten(input, includeNullItems)` behavior is unchanged
 
 ## Simple Examples
 
@@ -49,7 +49,7 @@ foreach (string key in flattened.AllKeys)
 
 ```csharp
 using System.Collections.Specialized;
-using View.Chunking;
+using Flattener;
 
 string xml = @"<User id=""123""><n>Alice</n><Skills><Skill>C#</Skill></Skills></User>";
 NameValueCollection flattened = XmlFlattener.Flatten(xml);
@@ -61,10 +61,10 @@ NameValueCollection withEmpties = XmlFlattener.Flatten(xml, includeNullItems: tr
 // Accessing values
 // XML attributes are prefixed with @
 string id = flattened.Get("User.@id");           // Returns "123"
-string name = flattened.Get("User.n");           // Returns "Alice"
+string name = flattened.Get("n");                // Returns "Alice" (child elements are keyed relative to the root)
 
 // For repeated elements (array-like):
-string[] skills = flattened.GetValues("User.Skills.Skill");
+string[] skills = flattened.GetValues("Skills.Skill");
 
 foreach (string key in flattened.AllKeys)
 {
@@ -75,6 +75,32 @@ foreach (string key in flattened.AllKeys)
     }
 }
 ```
+
+### Detecting malformed input
+
+`Flatten(input)` returns an empty collection for malformed input, which looks the same as a valid document with no values. When the difference matters, for example to fail a request or record the error on a trace span, use `TryFlatten` or the `throwOnError` overload:
+
+```csharp
+using System;
+using System.Collections.Specialized;
+using Flattener;
+
+if (JsonFlattener.TryFlatten(json, out NameValueCollection flattened, out Exception error))
+{
+    // flattened holds the key-value pairs (possibly zero for a valid empty document)
+}
+else
+{
+    // error is a JsonException (malformed input) or ArgumentNullException (null input);
+    // flattened is an empty collection, never null
+    Console.WriteLine($"Invalid JSON: {error.Message}");
+}
+
+// Or let the parse exception propagate:
+NameValueCollection strict = XmlFlattener.Flatten(xml, includeNullItems: false, throwOnError: true);
+```
+
+`TryFlatten` doesn't throw for null or malformed input. `Flatten(..., throwOnError: true)` throws `System.Text.Json.JsonException` (JSON) or `System.Xml.XmlException` (XML) for malformed input, and `ArgumentNullException` for null input.
 
 ## Version history
 
