@@ -8,6 +8,11 @@
 
 Flattener converts JSON or XML into flat key-value collections with dot notation.
 
+## New in v1.1.1
+
+- Dependency update: `System.Text.Json` 10.0.12
+- No API or behavior changes
+
 ## New in v1.1.0
 
 - `TryFlatten(input, out result, out error, includeNullItems)` on `JsonFlattener` and `XmlFlattener` reports malformed or null input instead of silently returning an empty collection
